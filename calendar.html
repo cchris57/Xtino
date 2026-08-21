@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History — Xtino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#15130F;
+    --bg-panel:#201D17;
+    --bg-panel-alt:#2A2620;
+    --text-primary:#F2EFE9;
+    --text-muted:#a39c8e;
+    --accent-lift:#C1441F;
+    --accent-lift-dim:#7a2c14;
+    --accent-run:#3FAF8B;
+    --accent-run-dim:#245a49;
+    --accent-free:#C9A227;
+    --border:#3A352C;
+    --border-soft:#2A261F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg-primary);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    padding:28px 16px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:960px; margin:0 auto;}
+
+  .topnav{
+    display:flex; align-items:center; gap:8px; margin-bottom:20px;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:0.06em;
+  }
+  .topnav a{
+    color:var(--text-muted); text-decoration:none; padding:6px 12px; border-radius:6px;
+    border:1px solid var(--border-soft); transition:all .15s ease;
+  }
+  .topnav a:hover{color:var(--text-primary); border-color:var(--accent-run);}
+  .topnav a.current{color:var(--text-primary); background:var(--accent-run-dim); border-color:var(--accent-run);}
+  .topnav .sep{color:var(--border);}
+
+  header{
+    display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+    gap:20px; padding-bottom:22px; margin-bottom:24px;
+    border-bottom:1px solid var(--border);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
+    color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:32px;
+    letter-spacing:0.01em; text-transform:uppercase; line-height:1;
+  }
+  h1 span{color:var(--accent-run);}
+
+  .month-nav{
+    display:flex; align-items:center; gap:14px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .month-nav button{
+    background:var(--bg-panel); border:1px solid var(--border-soft); color:var(--text-primary);
+    width:32px; height:32px; border-radius:7px; cursor:pointer; font-size:15px;
+  }
+  .month-nav button:hover{border-color:var(--accent-run);}
+  .month-label{font-size:15px; min-width:150px; text-align:center;}
+
+  .cal-head{
+    display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px;
+  }
+  .cal-head div{
+    text-align:center; font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); padding-bottom:4px;
+  }
+  .cal-grid{
+    display:grid; grid-template-columns:repeat(7,1fr); gap:6px;
+  }
+  .cal-cell{
+    background:var(--bg-panel); border:1px solid var(--border-soft); border-radius:9px;
+    min-height:78px; padding:8px 8px 7px; position:relative;
+  }
+  .cal-cell.outside{opacity:.32;}
+  .cal-cell.today{border-color:var(--accent-run);}
+  .cal-cell .date-num{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-muted);
+  }
+  .cal-cell.today .date-num{color:var(--accent-run); font-weight:700;}
+  .cal-cell .badges{margin-top:7px; display:flex; flex-direction:column; gap:4px;}
+  .badge{
+    display:flex; align-items:center; gap:4px;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.02em;
+    padding:2.5px 6px; border-radius:5px; width:fit-content;
+  }
+  .badge.lift{background:var(--accent-lift-dim); color:#f2b199;}
+  .badge.run{background:var(--accent-run-dim); color:#bdeedb;}
+  .badge.kcal-good{background:#1f3a30; color:var(--accent-run);}
+  .badge.kcal-over{background:#3a2416; color:var(--accent-free);}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:16px; margin-top:24px; padding-top:16px;
+    border-top:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--text-muted);
+  }
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .dot{width:9px; height:9px; border-radius:3px; flex-shrink:0;}
+  .legend .dot.lift{background:var(--accent-lift);}
+  .legend .dot.run{background:var(--accent-run);}
+  .legend .dot.kcal-good{background:var(--accent-run);}
+  .legend .dot.kcal-over{background:var(--accent-free);}
+
+  .loading{
+    text-align:center; padding:40px; color:var(--text-muted);
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+
+  footer{
+    text-align:center; color:var(--text-muted); font-size:11.5px; margin-top:30px;
+    font-family:'JetBrains Mono',monospace; letter-spacing:0.04em;
+  }
+
+  @media (max-width:560px){
+    .cal-cell{min-height:64px; padding:6px;}
+    .badge{font-size:8.5px; padding:2px 4px;}
+    h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topnav">
+    <a href="index.html">&larr; Home</a>
+    <span class="sep">/</span>
+    <a href="training.html">Training</a>
+    <a href="macros.html">Macros</a>
+    <a href="calendar.html" class="current">History</a>
+  </div>
+
+  <header>
+    <div>
+      <div class="eyebrow">Progress over time</div>
+      <h1>Hi<span>story</span></h1>
+    </div>
+    <div class="month-nav">
+      <button id="prev-month">‹</button>
+      <div class="month-label" id="month-label">—</div>
+      <button id="next-month">›</button>
+    </div>
+  </header>
+
+  <div id="cal-container">
+    <div class="loading">Loading history…</div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="dot lift"></span>Lift session logged</div>
+    <div class="item"><span class="dot run"></span>Run session logged</div>
+    <div class="item"><span class="dot kcal-good"></span>Calories at/under target</div>
+    <div class="item"><span class="dot kcal-over"></span>Calories over target</div>
+  </div>
+
+  <footer>Data reads from what's saved on this device — nothing is uploaded anywhere.</footer>
+</div>
+
+<script>
+const KCAL_TARGET = 2750;
+
+// Storage adapter: uses window.storage inside Claude artifacts, and
+// automatically falls back to localStorage when that API isn't present
+// (e.g. when this file is hosted standalone, like on GitHub Pages).
+const hasNativeStorage = typeof window.storage !== 'undefined';
+
+async function storageGet(key){
+  if(hasNativeStorage){
+    return await window.storage.get(key, false);
+  }
+  const raw = localStorage.getItem(key);
+  if(raw === null) throw new Error('not found');
+  return { value: raw };
+}
+
+async function tryGetJSON(key){
+  try{
+    const r = await storageGet(key);
+    return r ? JSON.parse(r.value) : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function isoDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function addDays(date, n){
+  const d = new Date(date);
+  d.setDate(d.getDate()+n);
+  return d;
+}
+function getMonday(date){
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+const WEEKDAY_LABELS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+const today = new Date();
+let viewYear = today.getFullYear();
+let viewMonth = today.getMonth(); // 0-indexed
+
+function fmt(n){ return Math.round(n).toLocaleString(); }
+
+async function renderMonth(){
+  const container = document.getElementById('cal-container');
+  container.innerHTML = '<div class="loading">Loading history…</div>';
+
+  const monthStart = new Date(viewYear, viewMonth, 1);
+  const monthEnd = new Date(viewYear, viewMonth + 1, 0);
+  document.getElementById('month-label').textContent =
+    monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  const gridStart = getMonday(monthStart);
+  const lastCellMonday = getMonday(monthEnd);
+  const gridEnd = addDays(lastCellMonday, 6);
+
+  const cellDates = [];
+  let cursor = new Date(gridStart);
+  while(cursor <= gridEnd){
+    cellDates.push(new Date(cursor));
+    cursor = addDays(cursor, 1);
+  }
+
+  const results = await Promise.all(cellDates.map(async (d) => {
+    const key = isoDate(d);
+    const [training, macro] = await Promise.all([
+      tryGetJSON('training-summary-' + key),
+      tryGetJSON('macro-summary-' + key)
+    ]);
+    return { date: d, key, training, macro };
+  }));
+
+  const head = document.createElement('div');
+  head.className = 'cal-head';
+  WEEKDAY_LABELS.forEach(w => {
+    const el = document.createElement('div');
+    el.textContent = w;
+    head.appendChild(el);
+  });
+
+  const grid = document.createElement('div');
+  grid.className = 'cal-grid';
+  const todayKey = isoDate(today);
+
+  results.forEach(({ date, key, training, macro }) => {
+    const cell = document.createElement('div');
+    const outside = date.getMonth() !== viewMonth;
+    cell.className = 'cal-cell' + (outside ? ' outside' : '') + (key === todayKey ? ' today' : '');
+
+    const num = document.createElement('div');
+    num.className = 'date-num';
+    num.textContent = date.getDate();
+    cell.appendChild(num);
+
+    const badges = document.createElement('div');
+    badges.className = 'badges';
+
+    if(training && training.total > 0){
+      const b = document.createElement('div');
+      b.className = 'badge ' + (training.type === 'run' ? 'run' : 'lift');
+      b.textContent = (training.type === 'run' ? '🏃' : '🏋') + ' ' + training.pct + '%';
+      badges.appendChild(b);
+    }
+
+    if(macro && macro.kcal > 0){
+      const b = document.createElement('div');
+      const over = macro.kcal > KCAL_TARGET;
+      b.className = 'badge ' + (over ? 'kcal-over' : 'kcal-good');
+      b.textContent = fmt(macro.kcal) + ' kcal';
+      badges.appendChild(b);
+    }
+
+    cell.appendChild(badges);
+    grid.appendChild(cell);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(head);
+  container.appendChild(grid);
+}
+
+document.getElementById('prev-month').addEventListener('click', () => {
+  viewMonth -= 1;
+  if(viewMonth < 0){ viewMonth = 11; viewYear -= 1; }
+  renderMonth();
+});
+document.getElementById('next-month').addEventListener('click', () => {
+  viewMonth += 1;
+  if(viewMonth > 11){ viewMonth = 0; viewYear += 1; }
+  renderMonth();
+});
+
+renderMonth();
+</script>
+</body>
+</html>

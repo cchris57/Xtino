@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 2 — Training Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#15130F;
+    --bg-panel:#201D17;
+    --bg-panel-alt:#2A2620;
+    --text-primary:#F2EFE9;
+    --text-muted:#a39c8e;
+    --accent-lift:#C1441F;
+    --accent-lift-dim:#7a2c14;
+    --accent-run:#3FAF8B;
+    --accent-run-dim:#245a49;
+    --border:#3A352C;
+    --border-soft:#2A261F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg-primary);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    padding:28px 16px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:960px; margin:0 auto;}
+
+  /* Header / scoreboard */
+  header{
+    display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+    gap:20px; padding-bottom:22px; margin-bottom:28px;
+    border-bottom:1px solid var(--border);
+  }
+  .title-block .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
+    color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:34px;
+    letter-spacing:0.01em; text-transform:uppercase; line-height:1;
+  }
+  h1 span{color:var(--accent-run);}
+  .subtitle{color:var(--text-muted); font-size:13.5px; margin-top:8px; max-width:420px;}
+  .scoreboard{
+    font-family:'JetBrains Mono',monospace; text-align:right;
+  }
+  .scoreboard .big{
+    font-size:44px; font-weight:700; line-height:1; letter-spacing:-0.01em;
+  }
+  .scoreboard .big .slash{color:var(--text-muted); font-weight:400;}
+  .scoreboard .label{
+    font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-muted); margin-top:4px;
+  }
+
+  /* Lane divider signature element */
+  .lane{
+    display:flex; align-items:center; gap:10px; margin:22px 0 14px;
+  }
+  .lane .dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+  .lane .lane-label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--text-muted); white-space:nowrap;
+  }
+  .lane .line{
+    flex:1; height:0; border-top:2px dashed var(--border);
+  }
+  .lane.lift .dot{background:var(--accent-lift);}
+  .lane.run .dot{background:var(--accent-run);}
+
+  /* Day cards */
+  .day-card{
+    background:var(--bg-panel);
+    border:1px solid var(--border-soft);
+    border-radius:10px;
+    padding:22px 22px 24px;
+    margin-bottom:22px;
+  }
+  .day-head{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
+  }
+  .day-name-row{display:flex; align-items:baseline; gap:10px;}
+  .day-num{
+    font-family:'JetBrains Mono',monospace; color:var(--text-muted); font-size:13px;
+  }
+  .day-name{
+    font-family:'Oswald',sans-serif; font-size:22px; text-transform:uppercase; letter-spacing:0.01em;
+  }
+  .day-focus{color:var(--text-muted); font-size:12.5px; margin-top:2px;}
+  .progress-ring{position:relative; width:52px; height:52px; flex-shrink:0;}
+  .progress-ring svg{transform:rotate(-90deg);}
+  .progress-ring circle{fill:none; stroke-width:4;}
+  .progress-ring .bg{stroke:var(--border-soft);}
+  .progress-ring .fg{stroke:var(--accent-run); stroke-linecap:round; transition:stroke-dashoffset 0.35s ease;}
+  .progress-ring .pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-primary);
+  }
+
+  .block{margin-top:6px;}
+  table{width:100%; border-collapse:collapse; margin-top:2px;}
+  th{
+    text-align:left; font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted);
+    padding:6px 8px; font-weight:500; border-bottom:1px solid var(--border-soft);
+  }
+  td{
+    padding:9px 8px; font-size:13.5px; border-bottom:1px solid var(--border-soft); vertical-align:middle;
+  }
+  tr:last-child td{border-bottom:none;}
+  .ex-name{font-weight:500;}
+  .ex-detail{color:var(--text-muted); font-size:12px; margin-top:1px;}
+  .col-check{width:34px; text-align:center;}
+  .col-weight{width:84px;}
+  input[type="checkbox"]{
+    appearance:none; -webkit-appearance:none;
+    width:20px; height:20px; border-radius:5px;
+    border:1.5px solid var(--border); background:var(--bg-panel-alt);
+    cursor:pointer; position:relative; flex-shrink:0;
+  }
+  input[type="checkbox"]:checked{background:var(--accent-run); border-color:var(--accent-run);}
+  input[type="checkbox"]:checked::after{
+    content:''; position:absolute; left:6px; top:2px; width:5px; height:10px;
+    border:solid var(--bg-primary); border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+  input[type="checkbox"]:focus-visible{outline:2px solid var(--accent-run); outline-offset:2px;}
+  .lift-row input[type="checkbox"]:checked{background:var(--accent-lift); border-color:var(--accent-lift);}
+  .lift-row input[type="checkbox"]:checked::after{border-color:var(--bg-primary);}
+
+  input[type="text"]{
+    width:100%; background:var(--bg-panel-alt); border:1px solid var(--border);
+    border-radius:5px; color:var(--text-primary); font-family:'JetBrains Mono',monospace;
+    font-size:12.5px; padding:6px 8px;
+  }
+  input[type="text"]::placeholder{color:#5a5548;}
+  input[type="text"]:focus{outline:2px solid var(--accent-run); outline-offset:1px;}
+
+  .notes-row td{color:var(--text-muted); font-size:12px; font-style:italic; padding-top:10px;}
+
+  .day-note{
+    margin-top:14px; padding:11px 13px; background:var(--bg-panel-alt); border-radius:7px;
+    font-size:12.5px; color:var(--text-muted); border-left:2px solid var(--accent-lift);
+  }
+
+  footer{
+    text-align:center; color:var(--text-muted); font-size:11.5px; margin-top:30px;
+    font-family:'JetBrains Mono',monospace; letter-spacing:0.04em;
+  }
+  .reset-btn{
+    background:none; border:1px solid var(--border); color:var(--text-muted);
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.08em;
+    text-transform:uppercase; padding:5px 10px; border-radius:5px; cursor:pointer; margin-top:14px;
+  }
+  .reset-btn:hover{border-color:var(--accent-lift); color:var(--text-primary);}
+  .save-status{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--text-muted); opacity:.75; margin-top:8px; text-align:right;
+  }
+  .save-status.error{color:var(--accent-lift); opacity:1;}
+
+  @media (max-width:560px){
+    h1{font-size:26px;}
+    .scoreboard .big{font-size:34px;}
+    th:nth-child(1), td:nth-child(1){display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">Tolerance Phase · Weeks 1–3</div>
+      <h1>Week <span>02</span></h1>
+      <div class="subtitle">3 combined lift + run sessions, ~60 min each. Tap a box as you finish each set — it saves automatically.</div>
+    </div>
+    <div class="scoreboard">
+      <div class="big" id="week-score">0<span class="slash">/3</span></div>
+      <div class="label">Days complete</div>
+    </div>
+  </header>
+
+  <!-- DAY 1 -->
+  <div class="day-card" data-day="d1">
+    <div class="day-head">
+      <div>
+        <div class="day-name-row">
+          <span class="day-num">MON</span>
+          <span class="day-name">Day 1 — Lift A</span>
+        </div>
+        <div class="day-focus">Squat / Bench / Pull · Easy run-walk</div>
+      </div>
+      <div class="progress-ring">
+        <svg width="52" height="52"><circle class="bg" cx="26" cy="26" r="22"></circle><circle class="fg" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="138.2"></circle></svg>
+        <div class="pct">0%</div>
+      </div>
+    </div>
+    <div class="save-status" data-save-status>Saved</div>
+
+    <div class="lane lift"><span class="dot"></span><span class="lane-label">Lift · 35 min</span><span class="line"></span></div>
+    <div class="block">
+      <table>
+        <thead><tr><th class="col-check">✓</th><th>Exercise</th><th>Target</th><th class="col-weight">Load</th></tr></thead>
+        <tbody>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="0"></td><td><div class="ex-name">Back Squat</div><div class="ex-detail">Rest 2–3 min</div></td><td>3 × 5 @ RPE 7–8</td><td><input type="text" placeholder="kg"></td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="1"></td><td><div class="ex-name">Bench Press</div><div class="ex-detail">Rest 2–3 min</div></td><td>3 × 5 @ RPE 7–8</td><td><input type="text" placeholder="kg"></td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="2"></td><td><div class="ex-name">Pull-ups / Rows</div><div class="ex-detail">Rest 90 sec</div></td><td>3 × 8</td><td><input type="text" placeholder="kg / BW"></td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="3"></td><td><div class="ex-name">Plank</div><div class="ex-detail">Rest 45 sec</div></td><td>2 × 30–45s</td><td><input type="text" placeholder="—"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lane run"><span class="dot"></span><span class="lane-label">Run · 20–25 min</span><span class="line"></span></div>
+    <div class="block">
+      <table>
+        <tbody>
+          <tr><td class="col-check"><input type="checkbox" data-item="4"></td><td colspan="2"><div class="ex-name">Run-walk intervals</div><div class="ex-detail">Easy, conversational pace throughout</div></td><td><input type="text" placeholder="felt?"></td></tr>
+          <tr class="notes-row"><td></td><td colspan="3">6 × (3 min run / 1 min walk)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="day-note">Lift first, run after — heavy compounds need a fresh nervous system.</div>
+    <button class="reset-btn" data-reset="d1">Reset day</button>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-card" data-day="d2">
+    <div class="day-head">
+      <div>
+        <div class="day-name-row">
+          <span class="day-num">WED</span>
+          <span class="day-name">Day 2 — Lift B</span>
+        </div>
+        <div class="day-focus">Deadlift / Press / Lunge · Easy run-walk</div>
+      </div>
+      <div class="progress-ring">
+        <svg width="52" height="52"><circle class="bg" cx="26" cy="26" r="22"></circle><circle class="fg" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="138.2"></circle></svg>
+        <div class="pct">0%</div>
+      </div>
+    </div>
+    <div class="save-status" data-save-status>Saved</div>
+
+    <div class="lane lift"><span class="dot"></span><span class="lane-label">Lift · 35 min</span><span class="line"></span></div>
+    <div class="block">
+      <table>
+        <thead><tr><th class="col-check">✓</th><th>Exercise</th><th>Target</th><th class="col-weight">Load</th></tr></thead>
+        <tbody>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="0"></td><td><div class="ex-name">Deadlift</div><div class="ex-detail">Rest 2–3 min · reduced volume</div></td><td>3 × 3 @ RPE 7</td><td><input type="text" placeholder="kg"></td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="1"></td><td><div class="ex-name">Overhead Press</div><div class="ex-detail">Rest 2 min</div></td><td>3 × 6</td><td><input type="text" placeholder="kg"></td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="2"></td><td><div class="ex-name">Walking Lunges</div><div class="ex-detail">Rest 90 sec</div></td><td>2 × 10 / leg</td><td><input type="text" placeholder="kg"></td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="3"></td><td><div class="ex-name">Face Pulls / Band Pull-aparts</div><div class="ex-detail">Rest 60 sec</div></td><td>2 × 15</td><td><input type="text" placeholder="—"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lane run"><span class="dot"></span><span class="lane-label">Run · 20–25 min</span><span class="line"></span></div>
+    <div class="block">
+      <table>
+        <tbody>
+          <tr><td class="col-check"><input type="checkbox" data-item="4"></td><td colspan="2"><div class="ex-name">Run-walk intervals</div><div class="ex-detail">Easy, conversational pace throughout</div></td><td><input type="text" placeholder="felt?"></td></tr>
+          <tr class="notes-row"><td></td><td colspan="3">6 × (3 min run / 1 min walk)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="day-note">Back tight from deadlifts? Brace before pulling, don't chase weight — form over load this phase.</div>
+    <button class="reset-btn" data-reset="d2">Reset day</button>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="day-card" data-day="d3">
+    <div class="day-head">
+      <div>
+        <div class="day-name-row">
+          <span class="day-num">FRI</span>
+          <span class="day-name">Day 3 — Run Focus</span>
+        </div>
+        <div class="day-focus">Longest run-walk of the week · Core & mobility</div>
+      </div>
+      <div class="progress-ring">
+        <svg width="52" height="52"><circle class="bg" cx="26" cy="26" r="22"></circle><circle class="fg" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="138.2"></circle></svg>
+        <div class="pct">0%</div>
+      </div>
+    </div>
+    <div class="save-status" data-save-status>Saved</div>
+
+    <div class="lane run"><span class="dot"></span><span class="lane-label">Run · 40–45 min</span><span class="line"></span></div>
+    <div class="block">
+      <table>
+        <thead><tr><th class="col-check">✓</th><th>Segment</th><th>Target</th><th class="col-weight">Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="col-check"><input type="checkbox" data-item="0"></td><td><div class="ex-name">Warm-up</div></td><td>5 min walk/jog</td><td><input type="text" placeholder="—"></td></tr>
+          <tr><td class="col-check"><input type="checkbox" data-item="1"></td><td><div class="ex-name">Run-walk build</div><div class="ex-detail">Longest segments of the week</div></td><td>8 × (4 min run / 1 min walk)</td><td><input type="text" placeholder="felt?"></td></tr>
+          <tr><td class="col-check"><input type="checkbox" data-item="2"></td><td><div class="ex-name">Cool-down</div></td><td>5 min walk</td><td><input type="text" placeholder="—"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lane lift"><span class="dot"></span><span class="lane-label">Core & Mobility · 15 min</span><span class="line"></span></div>
+    <div class="block">
+      <table>
+        <tbody>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="3"></td><td colspan="2"><div class="ex-name">Dead Bug</div></td><td>2 × 10 / side</td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="4"></td><td colspan="2"><div class="ex-name">Bird Dog</div></td><td>2 × 10 / side</td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="5"></td><td colspan="2"><div class="ex-name">Hip flexor + hamstring stretch</div></td><td>2 min / side</td></tr>
+          <tr class="lift-row"><td class="col-check"><input type="checkbox" data-item="6"></td><td colspan="2"><div class="ex-name">Foam roll — lower back & glutes</div></td><td>5 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="day-note">No heavy lifting today — keeps this your best-quality running effort of the week.</div>
+    <button class="reset-btn" data-reset="d3">Reset day</button>
+  </div>
+
+  <footer>Consistency &gt; intensity this phase — every run-walk logged is aerobic base being built.</footer>
+</div>
+
+<script>
+const dayConfigs = {
+  d1: { totalItems: 5, ring: null },
+  d2: { totalItems: 5, ring: null },
+  d3: { totalItems: 7, ring: null }
+};
+
+// Storage adapter: uses window.storage inside Claude artifacts, and
+// automatically falls back to localStorage when that API isn't present
+// (e.g. when this file is hosted standalone, like on GitHub Pages).
+const hasNativeStorage = typeof window.storage !== 'undefined';
+
+async function storageGet(key) {
+  if (hasNativeStorage) {
+    return await window.storage.get(key, false); // throws if missing
+  }
+  const raw = localStorage.getItem(key);
+  if (raw === null) throw new Error('not found');
+  return { value: raw };
+}
+
+async function storageSet(key, value) {
+  if (hasNativeStorage) {
+    const result = await window.storage.set(key, value, false);
+    if (!result) throw new Error('Storage set returned no result');
+    return result;
+  }
+  localStorage.setItem(key, value);
+  return { key, value };
+}
+
+async function loadDayState(day) {
+  try {
+    const result = await storageGet('week2-' + day);
+    return result ? JSON.parse(result.value) : { checked: {}, values: {} };
+  } catch (e) {
+    return { checked: {}, values: {} };
+  }
+}
+
+const saveTimers = {};
+
+function setSaveStatus(day, status, isError) {
+  const card = document.querySelector('.day-card[data-day="' + day + '"]');
+  const el = card && card.querySelector('[data-save-status]');
+  if (!el) return;
+  el.textContent = status;
+  el.classList.toggle('error', !!isError);
+}
+
+async function persistWithRetry(day, attempt) {
+  attempt = attempt || 0;
+  setSaveStatus(day, 'Saving…');
+  try {
+    await storageSet('week2-' + day, JSON.stringify(dayStates[day]));
+    setSaveStatus(day, 'Saved');
+  } catch (e) {
+    if (attempt < 3) {
+      setSaveStatus(day, 'Saving… (retrying)');
+      setTimeout(() => persistWithRetry(day, attempt + 1), 1200 * (attempt + 1));
+    } else {
+      console.error('Storage error saving', day, e);
+      setSaveStatus(day, 'Not saved — will retry on next edit', true);
+    }
+  }
+}
+
+// Debounced so rapid taps/typing batch into one save call instead of one per change.
+function scheduleSave(day) {
+  if (saveTimers[day]) clearTimeout(saveTimers[day]);
+  saveTimers[day] = setTimeout(() => persistWithRetry(day), 500);
+}
+
+const dayStates = {};
+
+async function saveDayState(day, state) {
+  dayStates[day] = state;
+  scheduleSave(day);
+}
+
+function updateRing(card, pct) {
+  const circle = card.querySelector('.progress-ring .fg');
+  const label = card.querySelector('.progress-ring .pct');
+  const circumference = 138.2;
+  const offset = circumference - (pct / 100) * circumference;
+  circle.style.strokeDashoffset = offset;
+  label.textContent = Math.round(pct) + '%';
+}
+
+function updateWeekScore() {
+  let complete = 0;
+  document.querySelectorAll('.day-card').forEach(card => {
+    const boxes = card.querySelectorAll('input[type="checkbox"]');
+    const checkedCount = card.querySelectorAll('input[type="checkbox"]:checked').length;
+    if (boxes.length > 0 && checkedCount === boxes.length) complete++;
+  });
+  document.getElementById('week-score').innerHTML = complete + '<span class="slash">/3</span>';
+}
+
+async function initDay(day) {
+  const card = document.querySelector('.day-card[data-day="' + day + '"]');
+  const state = await loadDayState(day);
+  dayStates[day] = state;
+  const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+  const textInputs = card.querySelectorAll('input[type="text"]');
+
+  checkboxes.forEach((box, idx) => {
+    const key = String(idx);
+    box.checked = !!state.checked[key];
+    box.addEventListener('change', async () => {
+      state.checked[key] = box.checked;
+      const total = checkboxes.length;
+      const checkedCount = card.querySelectorAll('input[type="checkbox"]:checked').length;
+      updateRing(card, (checkedCount / total) * 100);
+      updateWeekScore();
+      await saveDayState(day, state);
+    });
+  });
+
+  textInputs.forEach((inp, idx) => {
+    const key = 't' + idx;
+    inp.value = state.values[key] || '';
+    inp.addEventListener('change', async () => {
+      state.values[key] = inp.value;
+      await saveDayState(day, state);
+    });
+  });
+
+  const total = checkboxes.length;
+  const checkedCount = card.querySelectorAll('input[type="checkbox"]:checked').length;
+  updateRing(card, total > 0 ? (checkedCount / total) * 100 : 0);
+}
+
+document.querySelectorAll('[data-reset]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const day = btn.getAttribute('data-reset');
+    const card = document.querySelector('.day-card[data-day="' + day + '"]');
+    card.querySelectorAll('input[type="checkbox"]').forEach(b => b.checked = false);
+    card.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+    await saveDayState(day, { checked: {}, values: {} });
+    updateRing(card, 0);
+    updateWeekScore();
+  });
+});
+
+(async function init() {
+  for (const day of Object.keys(dayConfigs)) {
+    await initDay(day);
+  }
+  updateWeekScore();
+})();
+</script>
+</body>
+</html>

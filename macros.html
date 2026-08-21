@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#15130F;
+    --bg-panel:#201D17;
+    --bg-panel-alt:#2A2620;
+    --text-primary:#F2EFE9;
+    --text-muted:#a39c8e;
+    --accent-lift:#C1441F;
+    --accent-lift-dim:#7a2c14;
+    --accent-run:#3FAF8B;
+    --accent-run-dim:#245a49;
+    --accent-free:#C9A227;
+    --border:#3A352C;
+    --border-soft:#2A261F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg-primary);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    padding:28px 16px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:960px; margin:0 auto;}
+
+  .topnav{
+    display:flex; align-items:center; gap:8px; margin-bottom:20px;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:0.06em;
+  }
+  .topnav a{
+    color:var(--text-muted); text-decoration:none; padding:6px 12px; border-radius:6px;
+    border:1px solid var(--border-soft); transition:all .15s ease;
+  }
+  .topnav a:hover{color:var(--text-primary); border-color:var(--accent-run);}
+  .topnav a.current{color:var(--text-primary); background:var(--accent-run-dim); border-color:var(--accent-run);}
+  .topnav .sep{color:var(--border);}
+
+  header{
+    display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+    gap:20px; padding-bottom:22px; margin-bottom:24px;
+    border-bottom:1px solid var(--border);
+  }
+  .title-block .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
+    color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:32px;
+    letter-spacing:0.01em; text-transform:uppercase; line-height:1;
+  }
+  h1 span{color:var(--accent-run);}
+  .subtitle{color:var(--text-muted); font-size:13.5px; margin-top:8px; max-width:440px;}
+
+  /* Week summary bar */
+  .week-summary{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:26px;
+  }
+  .sum-card{
+    background:var(--bg-panel); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px 16px;
+  }
+  .sum-card .lbl{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;
+  }
+  .sum-card .val{
+    font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; line-height:1;
+  }
+  .sum-card .val .of{color:var(--text-muted); font-weight:400; font-size:14px;}
+  .bar-track{height:5px; background:var(--border-soft); border-radius:3px; margin-top:9px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:3px; transition:width .3s ease;}
+  .sum-card.kcal .bar-fill{background:var(--accent-run);}
+  .sum-card.protein .bar-fill{background:var(--accent-lift);}
+  .sum-card.carbs .bar-fill{background:#7a8fc1;}
+  .sum-card.fat .bar-fill{background:var(--accent-free);}
+
+  .day-nav{
+    display:flex; gap:6px; overflow-x:auto; margin-bottom:20px; padding-bottom:4px;
+  }
+  .day-tab{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:0.06em;
+    background:var(--bg-panel); border:1px solid var(--border-soft); color:var(--text-muted);
+    padding:8px 13px; border-radius:7px; cursor:pointer; white-space:nowrap; flex-shrink:0;
+    text-transform:uppercase; transition:all .15s ease;
+  }
+  .day-tab .pct{display:block; font-size:9.5px; margin-top:2px; opacity:.7;}
+  .day-tab.active{background:var(--accent-run-dim); border-color:var(--accent-run); color:var(--text-primary);}
+  .day-tab.weekend{border-color:var(--accent-free);}
+  .day-tab.weekend.active{background:#4d3f10; border-color:var(--accent-free);}
+
+  .day-card{
+    background:var(--bg-panel); border:1px solid var(--border-soft); border-radius:10px;
+    padding:22px 22px 24px; margin-bottom:20px; display:none;
+  }
+  .day-card.active{display:block;}
+  .day-head{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
+    margin-bottom:6px;
+  }
+  .day-name{font-family:'Oswald',sans-serif; font-size:22px; text-transform:uppercase;}
+  .day-name .tag{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-muted);
+    text-transform:none; letter-spacing:0; margin-left:8px;
+  }
+  .day-totals{
+    font-family:'JetBrains Mono',monospace; font-size:13px; text-align:right; color:var(--text-muted);
+  }
+  .day-totals b{color:var(--text-primary); font-size:16px;}
+  .treats-note{color:var(--accent-free);}
+  .save-status{
+    display:block; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--text-muted); margin-top:4px; opacity:.75;
+  }
+  .save-status.error{color:var(--accent-lift); opacity:1;}
+
+  .treat-presets{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px;}
+  .preset-btn{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.04em;
+    background:var(--bg-panel); border:1px solid var(--accent-free); color:var(--accent-free);
+    padding:6px 11px; border-radius:6px; cursor:pointer;
+  }
+  .preset-btn.clear{border-color:var(--border); color:var(--text-muted);}
+
+  .training-toggle{
+    display:flex; align-items:center; gap:8px; margin:14px 0 18px;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-muted);
+    letter-spacing:0.04em; text-transform:uppercase;
+  }
+  .training-toggle input{width:16px; height:16px; accent-color:var(--accent-lift); cursor:pointer;}
+
+  .lane{display:flex; align-items:center; gap:10px; margin:20px 0 12px;}
+  .lane .dot{width:7px; height:7px; border-radius:50%; flex-shrink:0; background:var(--accent-run);}
+  .lane .lane-label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--text-muted); white-space:nowrap;
+  }
+  .lane .line{flex:1; height:0; border-top:2px dashed var(--border);}
+  .lane .mode-toggle{display:flex; gap:4px;}
+  .mode-btn{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.06em;
+    background:var(--bg-panel-alt); border:1px solid var(--border); color:var(--text-muted);
+    padding:4px 9px; border-radius:5px; cursor:pointer; text-transform:uppercase;
+  }
+  .mode-btn.active{background:var(--accent-free); border-color:var(--accent-free); color:#1a1608;}
+
+  .meal-block{margin-bottom:4px;}
+  .food-row{
+    display:grid; grid-template-columns:1fr 90px 90px; align-items:center; gap:10px;
+    padding:8px 2px; border-bottom:1px solid var(--border-soft);
+  }
+  .food-row:last-child{border-bottom:none;}
+  .food-name{font-size:13.5px; font-weight:500;}
+  .food-name .hint{display:block; font-size:11px; color:var(--text-muted); font-weight:400; margin-top:1px;}
+  .food-row input[type="number"]{
+    width:100%; background:var(--bg-panel-alt); border:1px solid var(--border);
+    border-radius:5px; color:var(--text-primary); font-family:'JetBrains Mono',monospace;
+    font-size:12.5px; padding:7px 8px; text-align:right;
+  }
+  .food-row input[type="number"]:focus{outline:2px solid var(--accent-run); outline-offset:1px;}
+  .food-macros{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted); text-align:right;
+  }
+  .carb-choice{display:flex; gap:6px; margin-bottom:4px;}
+  .carb-choice label{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-muted);
+    display:flex; align-items:center; gap:4px; cursor:pointer;
+  }
+  .carb-choice input{accent-color:var(--accent-run); cursor:pointer;}
+
+  .meal-sub{
+    font-family:'JetBrains Mono',monospace; font-size:12px; text-align:right; color:var(--text-muted);
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--border-soft);
+  }
+  .meal-sub b{color:var(--text-primary);}
+
+  .free-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:10px;
+  }
+  .free-grid label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-muted);
+    letter-spacing:0.06em; text-transform:uppercase; margin-bottom:5px;
+  }
+  .free-grid input[type="number"]{
+    width:100%; background:var(--bg-panel-alt); border:1px solid var(--border);
+    border-radius:5px; color:var(--text-primary); font-family:'JetBrains Mono',monospace;
+    font-size:13px; padding:8px; text-align:right;
+  }
+  .free-note{
+    width:100%; background:var(--bg-panel-alt); border:1px solid var(--border);
+    border-radius:5px; color:var(--text-primary); font-family:'Inter',sans-serif;
+    font-size:12.5px; padding:8px 10px;
+  }
+
+  .extras-block{
+    margin-top:20px; padding:13px 15px; background:var(--bg-panel-alt); border-radius:8px;
+    border-left:2px solid var(--accent-lift);
+  }
+  .extras-block .lbl{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;
+  }
+
+  .day-note{
+    margin-top:16px; padding:11px 13px; background:var(--bg-panel-alt); border-radius:7px;
+    font-size:12px; color:var(--text-muted); border-left:2px solid var(--accent-run);
+  }
+
+  footer{
+    text-align:center; color:var(--text-muted); font-size:11.5px; margin-top:30px;
+    font-family:'JetBrains Mono',monospace; letter-spacing:0.04em;
+  }
+
+  .day-tab.summary-tab{border-color:var(--accent-free); order:-1;}
+  .day-tab.summary-tab.active{background:#4d3f10; border-color:var(--accent-free);}
+
+  .stat-diff{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; margin-top:7px;
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .stat-diff.good{color:var(--accent-run);}
+  .stat-diff.warn{color:var(--accent-free);}
+  .stat-diff.bad{color:var(--accent-lift);}
+  .stat-diff.neutral{color:var(--text-muted);}
+
+  .wk-table{width:100%; border-collapse:collapse; margin-top:2px;}
+  .wk-table th{
+    text-align:left; font-family:'JetBrains Mono',monospace; font-size:10px;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted);
+    padding:7px 8px; font-weight:500; border-bottom:1px solid var(--border-soft);
+  }
+  .wk-table td{
+    padding:9px 8px; font-family:'JetBrains Mono',monospace; font-size:13px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .wk-table tr:last-child td{border-bottom:none;}
+  .wk-table td.pos{color:var(--accent-run);}
+  .wk-table td.neg{color:var(--accent-lift);}
+    h1{font-size:24px;}
+    .week-summary{grid-template-columns:repeat(2,1fr);}
+    .free-grid{grid-template-columns:repeat(2,1fr);}
+    .food-row{grid-template-columns:1fr 76px 76px; gap:6px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topnav">
+    <a href="index.html">&larr; Home</a>
+    <span class="sep">/</span>
+    <a href="training.html">Training</a>
+    <a href="macros.html" class="current">Macros</a>
+  </div>
+
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">Body Recomp · 15% → 10–12%</div>
+      <h1>Macro <span>Tracker</span></h1>
+      <div class="subtitle">2 meals/day — chicken with rice or potato, salad, tortilla. Free meals on weekends. Training days add a shake + oats.</div>
+    </div>
+  </header>
+
+  <div class="week-summary">
+    <div class="sum-card kcal">
+      <div class="lbl">Calories today</div>
+      <div class="val"><span id="sum-kcal">0</span><span class="of"> / 2750</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bar-kcal" style="width:0%"></div></div>
+    </div>
+    <div class="sum-card protein">
+      <div class="lbl">Protein today</div>
+      <div class="val"><span id="sum-protein">0</span><span class="of">g / 190g</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bar-protein" style="width:0%"></div></div>
+    </div>
+    <div class="sum-card carbs">
+      <div class="lbl">Carbs today</div>
+      <div class="val"><span id="sum-carbs">0</span><span class="of">g / 315g</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bar-carbs" style="width:0%"></div></div>
+    </div>
+    <div class="sum-card fat">
+      <div class="lbl">Fat today</div>
+      <div class="val"><span id="sum-fat">0</span><span class="of">g / 80g</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bar-fat" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="day-nav" id="day-nav"></div>
+  <div id="days-container"></div>
+
+  <div class="day-card" id="summary-card" data-day="summary">
+    <div class="day-head">
+      <div class="day-name">Weekly Summary</div>
+      <div class="day-totals">
+        <span id="wk-days-logged">0 / 7</span> days logged · avg <b id="wk-avg-kcal">0</b> kcal/day
+      </div>
+    </div>
+
+    <div class="week-summary" style="margin-top:18px;">
+      <div class="sum-card kcal" data-stat="kcal">
+        <div class="lbl">Weekly Calories</div>
+        <div class="val"><span data-stat-actual>0</span><span class="of"> / <span data-stat-target>0</span></span></div>
+        <div class="bar-track"><div class="bar-fill" data-stat-bar style="width:0%"></div></div>
+        <div class="stat-diff" data-stat-diff></div>
+      </div>
+      <div class="sum-card protein" data-stat="protein">
+        <div class="lbl">Weekly Protein</div>
+        <div class="val"><span data-stat-actual>0</span><span class="of">g / <span data-stat-target>0</span>g</span></div>
+        <div class="bar-track"><div class="bar-fill" data-stat-bar style="width:0%"></div></div>
+        <div class="stat-diff" data-stat-diff></div>
+      </div>
+      <div class="sum-card carbs" data-stat="carbs">
+        <div class="lbl">Weekly Carbs</div>
+        <div class="val"><span data-stat-actual>0</span><span class="of">g / <span data-stat-target>0</span>g</span></div>
+        <div class="bar-track"><div class="bar-fill" data-stat-bar style="width:0%"></div></div>
+        <div class="stat-diff" data-stat-diff></div>
+      </div>
+      <div class="sum-card fat" data-stat="fat">
+        <div class="lbl">Weekly Fat</div>
+        <div class="val"><span data-stat-actual>0</span><span class="of">g / <span data-stat-target>0</span>g</span></div>
+        <div class="bar-track"><div class="bar-fill" data-stat-bar style="width:0%"></div></div>
+        <div class="stat-diff" data-stat-diff></div>
+      </div>
+    </div>
+
+    <div class="lane"><span class="dot"></span><span class="lane-label">Day by day</span><span class="line"></span></div>
+    <table class="wk-table">
+      <thead><tr><th>Day</th><th>Kcal</th><th>Protein</th><th>Vs daily target</th></tr></thead>
+      <tbody id="wk-day-rows"></tbody>
+    </table>
+
+    <div class="day-note">Weekly targets are 7× your daily targets (2750 kcal · 190g protein · 80g fat · ~315g carbs). For calories, green means at/under target — that's your deficit on track. For protein, green means you hit or exceeded target.</div>
+  </div>
+
+  <footer>Targets: ~2750 kcal · 190g protein · 80g fat · ~315g carbs. Tap a day tab to switch — everything saves automatically.</footer>
+</div>
+
+<script>
+const DAYS = [
+  { key:'mon', label:'Monday', short:'MON', training:true, weekend:false },
+  { key:'tue', label:'Tuesday', short:'TUE', training:false, weekend:false },
+  { key:'wed', label:'Wednesday', short:'WED', training:true, weekend:false },
+  { key:'thu', label:'Thursday', short:'THU', training:false, weekend:false },
+  { key:'fri', label:'Friday', short:'FRI', training:true, weekend:false },
+  { key:'sat', label:'Saturday', short:'SAT', training:false, weekend:true },
+  { key:'sun', label:'Sunday', short:'SUN', training:false, weekend:true },
+];
+
+// macros per 100g unless noted
+const FOODS = {
+  chicken: { label:'Grilled Chicken', hint:'per 100g', per100:{kcal:165, protein:31, carbs:0, fat:3.6} },
+  rice:    { label:'Rice (cooked)', hint:'per 100g', per100:{kcal:130, protein:2.7, carbs:28, fat:0.3} },
+  potato:  { label:'Potato (boiled/baked)', hint:'per 100g', per100:{kcal:87, protein:1.9, carbs:20, fat:0.1} },
+  salad:   { label:'Salad + olive oil', hint:'per 100g, light dressing', per100:{kcal:45, protein:1.3, carbs:3.5, fat:3.5} },
+  tortilla:{ label:'Tortilla', hint:'per piece (~55g)', perUnit:{kcal:170, protein:4.5, carbs:28, fat:4} },
+  shake:   { label:'Protein shake', hint:'per scoop', perUnit:{kcal:120, protein:24, carbs:3, fat:1.5} },
+  oats:    { label:'Oats (dry)', hint:'per 100g', per100:{kcal:389, protein:16.9, carbs:66, fat:6.9} },
+};
+
+const DAILY_TARGETS = { kcal:2750, protein:190, carbs:315, fat:80 };
+const WEEK_TARGETS = { kcal:DAILY_TARGETS.kcal*7, protein:DAILY_TARGETS.protein*7, carbs:DAILY_TARGETS.carbs*7, fat:DAILY_TARGETS.fat*7 };
+
+const TREAT_PRESETS = {
+  icecream: { label:'Ice cream 0% sugar', kcal:90 },
+  gt: { label:'Gin & Tonic', kcal:150 },
+};
+
+function emptyMeal(){
+  return { mode:'standard', chicken:150, carb:'rice', carbAmt:200, salad:100, tortilla:1,
+           free:{kcal:'', protein:'', carbs:'', fat:'', note:''} };
+}
+function defaultState(day){
+  return {
+    training: day.training,
+    meals: [emptyMeal(), emptyMeal()],
+    extras: { shake: 1, oats: 60 },
+    treats: { kcal: 0 }
+  };
+}
+function zero(){ return {kcal:0, protein:0, carbs:0, fat:0}; }
+function addM(a,b){ return {kcal:a.kcal+b.kcal, protein:a.protein+b.protein, carbs:a.carbs+b.carbs, fat:a.fat+b.fat}; }
+function scaleM(m, factor){ return {kcal:m.kcal*factor, protein:m.protein*factor, carbs:m.carbs*factor, fat:m.fat*factor}; }
+
+function mealMacros(meal){
+  if(meal.mode === 'free'){
+    return {
+      kcal: parseFloat(meal.free.kcal)||0,
+      protein: parseFloat(meal.free.protein)||0,
+      carbs: parseFloat(meal.free.carbs)||0,
+      fat: parseFloat(meal.free.fat)||0,
+    };
+  }
+  let total = zero();
+  total = addM(total, scaleM(FOODS.chicken.per100, (meal.chicken||0)/100));
+  const carbFood = meal.carb === 'potato' ? FOODS.potato : FOODS.rice;
+  total = addM(total, scaleM(carbFood.per100, (meal.carbAmt||0)/100));
+  total = addM(total, scaleM(FOODS.salad.per100, (meal.salad||0)/100));
+  total = addM(total, scaleM(FOODS.tortilla.perUnit, (meal.tortilla||0)));
+  return total;
+}
+function extrasMacros(state){
+  if(!state.training) return zero();
+  let total = zero();
+  total = addM(total, scaleM(FOODS.shake.perUnit, (state.extras.shake||0)));
+  total = addM(total, scaleM(FOODS.oats.per100, (state.extras.oats||0)/100));
+  return total;
+}
+function dayMacros(state){
+  let total = zero();
+  state.meals.forEach(m => total = addM(total, mealMacros(m)));
+  total = addM(total, extrasMacros(state));
+  return total;
+}
+function fmt(n){ return Math.round(n).toLocaleString(); }
+
+// Storage adapter: uses window.storage inside Claude artifacts, and
+// automatically falls back to localStorage when that API isn't present
+// (e.g. when this file is hosted standalone, like on GitHub Pages).
+const hasNativeStorage = typeof window.storage !== 'undefined';
+
+async function storageGet(key){
+  if(hasNativeStorage){
+    return await window.storage.get(key, false); // throws if missing
+  }
+  const raw = localStorage.getItem(key);
+  if(raw === null) throw new Error('not found');
+  return { value: raw };
+}
+
+async function storageSet(key, value){
+  if(hasNativeStorage){
+    const result = await window.storage.set(key, value, false);
+    if(!result) throw new Error('Storage set returned no result');
+    return result;
+  }
+  localStorage.setItem(key, value);
+  return { key, value };
+}
+
+async function loadDayState(day){
+  try{
+    const result = await storageGet('macro-' + day.key);
+    const parsed = result ? JSON.parse(result.value) : defaultState(day);
+    if(!parsed.meals) parsed.meals = [emptyMeal(), emptyMeal()];
+    if(!parsed.extras) parsed.extras = { shake: 1, oats: 60 };
+    if(!parsed.treats) parsed.treats = { kcal: 0 };
+    parsed.meals.forEach(m => { if(!m.free) m.free = {kcal:'', protein:'', carbs:'', fat:'', note:''}; });
+    return parsed;
+  }catch(e){ return defaultState(day); }
+}
+async function saveDayState(day, state){
+  return await storageSet('macro-' + day.key, JSON.stringify(state));
+}
+
+const stateCache = {};
+
+function foodRow(mealIdx, key, label, hint, valueField, macros, extraAttrs){
+  return `<div class="food-row">
+    <div class="food-name">${label}<span class="hint">${hint}</span></div>
+    <input type="number" min="0" step="1" data-meal="${mealIdx}" data-field="${valueField}" ${extraAttrs||''}>
+    <div class="food-macros" data-macro-for="${mealIdx}-${key}">0 kcal</div>
+  </div>`;
+}
+
+function renderMeal(day, mealIdx){
+  return `
+  <div class="meal-block" data-meal-block="${mealIdx}">
+    <div class="lane">
+      <span class="dot"></span>
+      <span class="lane-label">Meal ${mealIdx+1}</span>
+      <span class="line"></span>
+      <div class="mode-toggle">
+        <button type="button" class="mode-btn" data-mode="standard" data-meal="${mealIdx}">Standard</button>
+        <button type="button" class="mode-btn" data-mode="free" data-meal="${mealIdx}">Free meal</button>
+      </div>
+    </div>
+    <div class="standard-view" data-standard="${mealIdx}">
+      ${foodRow(mealIdx,'chicken','Grilled Chicken','g',`chicken`)}
+      <div class="food-row" style="grid-template-columns:1fr 90px 90px;">
+        <div class="food-name">
+          Rice / Potato
+          <div class="carb-choice">
+            <label><input type="radio" name="carb-${day.key}-${mealIdx}" value="rice" data-meal="${mealIdx}" data-field="carb"> Rice</label>
+            <label><input type="radio" name="carb-${day.key}-${mealIdx}" value="potato" data-meal="${mealIdx}" data-field="carb"> Potato</label>
+          </div>
+        </div>
+        <input type="number" min="0" step="1" data-meal="${mealIdx}" data-field="carbAmt">
+        <div class="food-macros" data-macro-for="${mealIdx}-carb">0 kcal</div>
+      </div>
+      ${foodRow(mealIdx,'salad','Salad + olive oil','g',`salad`)}
+      ${foodRow(mealIdx,'tortilla','Tortilla','pieces',`tortilla`)}
+    </div>
+    <div class="free-view" data-free="${mealIdx}" style="display:none;">
+      <div class="free-grid">
+        <div><label>Kcal</label><input type="number" min="0" data-meal="${mealIdx}" data-freefield="kcal"></div>
+        <div><label>Protein g</label><input type="number" min="0" data-meal="${mealIdx}" data-freefield="protein"></div>
+        <div><label>Carbs g</label><input type="number" min="0" data-meal="${mealIdx}" data-freefield="carbs"></div>
+        <div><label>Fat g</label><input type="number" min="0" data-meal="${mealIdx}" data-freefield="fat"></div>
+      </div>
+      <input type="text" class="free-note" placeholder="What did you eat? (optional)" data-meal="${mealIdx}" data-freefield="note">
+    </div>
+    <div class="meal-sub">Meal ${mealIdx+1} total: <b data-meal-total="${mealIdx}">0 kcal</b></div>
+  </div>`;
+}
+
+function renderDayCard(day){
+  return `
+  <div class="day-card" data-day="${day.key}">
+    <div class="day-head">
+      <div class="day-name">${day.label} <span class="tag" data-training-tag>${day.training ? 'Training day' : 'Rest day'}</span></div>
+      <div class="day-totals">
+        <b data-day-kcal>0</b> kcal <span class="treats-note" data-treats-note></span> · <span data-day-protein>0</span>g protein
+        <span class="save-status" data-save-status>Saved</span>
+      </div>
+    </div>
+    <label class="training-toggle">
+      <input type="checkbox" data-training-toggle>
+      Training day (adds protein shake + oats)
+    </label>
+    ${renderMeal(day, 0)}
+    ${renderMeal(day, 1)}
+    <div class="extras-block" data-extras-block>
+      <div class="lbl">Training day extras</div>
+      <div class="food-row" style="grid-template-columns:1fr 90px 90px;">
+        <div class="food-name">Protein shake<span class="hint">scoops</span></div>
+        <input type="number" min="0" step="1" data-extra="shake">
+        <div class="food-macros" data-macro-for="extra-shake">0 kcal</div>
+      </div>
+      <div class="food-row" style="grid-template-columns:1fr 90px 90px;">
+        <div class="food-name">Oats<span class="hint">g dry</span></div>
+        <input type="number" min="0" step="1" data-extra="oats">
+        <div class="food-macros" data-macro-for="extra-oats">0 kcal</div>
+      </div>
+    </div>
+    <div class="extras-block" data-treats-block style="border-left-color:var(--accent-free);">
+      <div class="lbl">Treats — ice cream, beer, etc. (added straight to total, no breakdown)</div>
+      <div class="food-row" style="grid-template-columns:1fr 90px 90px;">
+        <div class="food-name">Extra calories<span class="hint">kcal</span></div>
+        <input type="number" min="0" step="1" data-treats-kcal>
+        <div class="food-macros"></div>
+      </div>
+      <div class="treat-presets">
+        <button type="button" class="preset-btn" data-preset="icecream">+ Ice cream 0% sugar (~90 kcal)</button>
+        <button type="button" class="preset-btn" data-preset="gt">+ Gin &amp; Tonic (~150 kcal)</button>
+        <button type="button" class="preset-btn clear" data-preset-clear>Clear treats</button>
+      </div>
+    </div>
+    ${day.weekend ? '<div class="day-note">Weekend — switch either meal to "Free meal" and log your best estimate. No need to be exact.</div>' : '<div class="day-note">Keep both meals standard for consistent tracking on weekdays.</div>'}
+  </div>`;
+}
+
+function updateFoodMacroLabel(card, mealIdx, key, macroObj){
+  const el = card.querySelector(`[data-macro-for="${mealIdx}-${key}"]`);
+  if(el) el.textContent = `${fmt(macroObj.kcal)} kcal`;
+}
+
+function renderMealValues(card, day, state, mealIdx){
+  const meal = state.meals[mealIdx];
+  const standardEl = card.querySelector(`[data-standard="${mealIdx}"]`);
+  const freeEl = card.querySelector(`[data-free="${mealIdx}"]`);
+  const btns = card.querySelectorAll(`.mode-btn[data-meal="${mealIdx}"]`);
+  btns.forEach(b => b.classList.toggle('active', b.dataset.mode === meal.mode));
+  standardEl.style.display = meal.mode === 'standard' ? '' : 'none';
+  freeEl.style.display = meal.mode === 'free' ? '' : 'none';
+
+  card.querySelector(`input[data-meal="${mealIdx}"][data-field="chicken"]`).value = meal.chicken;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-field="carbAmt"]`).value = meal.carbAmt;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-field="salad"]`).value = meal.salad;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-field="tortilla"]`).value = meal.tortilla;
+  card.querySelectorAll(`input[data-meal="${mealIdx}"][data-field="carb"]`).forEach(r => r.checked = (r.value === meal.carb));
+
+  card.querySelector(`input[data-meal="${mealIdx}"][data-freefield="kcal"]`).value = meal.free.kcal;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-freefield="protein"]`).value = meal.free.protein;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-freefield="carbs"]`).value = meal.free.carbs;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-freefield="fat"]`).value = meal.free.fat;
+  card.querySelector(`input[data-meal="${mealIdx}"][data-freefield="note"]`).value = meal.free.note;
+
+  // per-row macro labels (standard mode only)
+  updateFoodMacroLabel(card, mealIdx, 'chicken', scaleM(FOODS.chicken.per100, (meal.chicken||0)/100));
+  const carbFood = meal.carb === 'potato' ? FOODS.potato : FOODS.rice;
+  updateFoodMacroLabel(card, mealIdx, 'carb', scaleM(carbFood.per100, (meal.carbAmt||0)/100));
+  updateFoodMacroLabel(card, mealIdx, 'salad', scaleM(FOODS.salad.per100, (meal.salad||0)/100));
+  updateFoodMacroLabel(card, mealIdx, 'tortilla', scaleM(FOODS.tortilla.perUnit, (meal.tortilla||0)));
+
+  const total = mealMacros(meal);
+  card.querySelector(`[data-meal-total="${mealIdx}"]`).textContent =
+    `${fmt(total.kcal)} kcal · ${fmt(total.protein)}p / ${fmt(total.carbs)}c / ${fmt(total.fat)}f`;
+}
+
+function renderDay(card, day, state){
+  card.querySelector('[data-training-toggle]').checked = state.training;
+  card.querySelector('[data-training-tag]').textContent = state.training ? 'Training day' : 'Rest day';
+  card.querySelector('[data-extras-block]').style.display = state.training ? '' : 'none';
+
+  card.querySelector('input[data-extra="shake"]').value = state.extras.shake;
+  card.querySelector('input[data-extra="oats"]').value = state.extras.oats;
+  updateFoodMacroLabel(card, 'extra', 'shake', scaleM(FOODS.shake.perUnit, (state.extras.shake||0)));
+  updateFoodMacroLabel(card, 'extra', 'oats', scaleM(FOODS.oats.per100, (state.extras.oats||0)/100));
+
+  renderMealValues(card, day, state, 0);
+  renderMealValues(card, day, state, 1);
+
+  card.querySelector('[data-treats-kcal]').value = state.treats.kcal;
+  const treatsNote = card.querySelector('[data-treats-note]');
+  treatsNote.textContent = state.treats.kcal > 0 ? `(+${fmt(state.treats.kcal)} treats)` : '';
+
+  const total = dayMacros(state);
+  card.querySelector('[data-day-kcal]').textContent = fmt(total.kcal + (state.treats.kcal||0));
+  card.querySelector('[data-day-protein]').textContent = fmt(total.protein);
+}
+
+function updateWeekSummaryForActiveDay(day){
+  const state = stateCache[day.key];
+  const total = dayMacros(state);
+  const totalKcal = total.kcal + (state.treats.kcal||0);
+  document.getElementById('sum-kcal').textContent = fmt(totalKcal);
+  document.getElementById('sum-protein').textContent = fmt(total.protein);
+  document.getElementById('sum-carbs').textContent = fmt(total.carbs);
+  document.getElementById('sum-fat').textContent = fmt(total.fat);
+  document.getElementById('bar-kcal').style.width = Math.min(100, (totalKcal/2750)*100) + '%';
+  document.getElementById('bar-protein').style.width = Math.min(100, (total.protein/190)*100) + '%';
+  document.getElementById('bar-carbs').style.width = Math.min(100, (total.carbs/315)*100) + '%';
+  document.getElementById('bar-fat').style.width = Math.min(100, (total.fat/80)*100) + '%';
+}
+
+function updateNavPct(day){
+  const state = stateCache[day.key];
+  const total = dayMacros(state);
+  const totalKcal = total.kcal + (state.treats.kcal||0);
+  const tab = document.querySelector(`.day-tab[data-tab="${day.key}"] .pct`);
+  if(tab) tab.textContent = fmt(totalKcal) + ' kcal';
+}
+
+let activeDayKey = DAYS[0].key;
+const saveTimers = {};
+
+function setSaveStatus(day, status, isError){
+  const el = document.querySelector(`.day-card[data-day="${day.key}"] [data-save-status]`);
+  if(!el) return;
+  el.textContent = status;
+  el.classList.toggle('error', !!isError);
+}
+
+async function persistWithRetry(day, attempt){
+  attempt = attempt || 0;
+  setSaveStatus(day, 'Saving…');
+  try{
+    await saveDayState(day, stateCache[day.key]);
+    setSaveStatus(day, 'Saved');
+  }catch(e){
+    if(attempt < 3){
+      setSaveStatus(day, 'Saving… (retrying)');
+      setTimeout(() => persistWithRetry(day, attempt + 1), 1200 * (attempt + 1));
+    }else{
+      console.error('Storage error saving', day.key, e);
+      setSaveStatus(day, 'Not saved — will retry on next edit', true);
+    }
+  }
+}
+
+// Debounced: batches rapid keystrokes into one save call instead of one per keypress
+function scheduleSave(day){
+  if(saveTimers[day.key]) clearTimeout(saveTimers[day.key]);
+  setSaveStatus(day, 'Editing…');
+  saveTimers[day.key] = setTimeout(() => persistWithRetry(day), 600);
+}
+
+function wireDay(day){
+  const card = document.querySelector(`.day-card[data-day="${day.key}"]`);
+  const state = stateCache[day.key];
+
+  // Renders immediately from local state; the network save is debounced separately
+  // so typing doesn't fire a storage request on every keystroke.
+  const persist = () => {
+    renderDay(card, day, state);
+    updateNavPct(day);
+    if(activeDayKey === day.key) updateWeekSummaryForActiveDay(day);
+    if(activeDayKey === 'summary') renderSummary();
+    scheduleSave(day);
+  };
+
+  card.querySelector('[data-training-toggle]').addEventListener('change', (e) => {
+    state.training = e.target.checked;
+    persist();
+  });
+
+  card.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.meal);
+      state.meals[idx].mode = btn.dataset.mode;
+      persist();
+    });
+  });
+
+  card.querySelectorAll('input[type="number"][data-meal]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.meal);
+      const field = inp.dataset.field;
+      state.meals[idx][field] = parseFloat(inp.value) || 0;
+      persist();
+    });
+  });
+  card.querySelectorAll('input[type="radio"][data-meal][data-field="carb"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const idx = parseInt(r.dataset.meal);
+      if(r.checked) state.meals[idx].carb = r.value;
+      persist();
+    });
+  });
+  card.querySelectorAll('[data-freefield]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = parseInt(inp.dataset.meal);
+      state.meals[idx].free[inp.dataset.freefield] = inp.value;
+      persist();
+    });
+  });
+  card.querySelectorAll('input[data-extra]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      state.extras[inp.dataset.extra] = parseFloat(inp.value) || 0;
+      persist();
+    });
+  });
+
+  card.querySelector('[data-treats-kcal]').addEventListener('input', (e) => {
+    state.treats.kcal = parseFloat(e.target.value) || 0;
+    persist();
+  });
+  card.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = TREAT_PRESETS[btn.dataset.preset];
+      if(preset){
+        state.treats.kcal = (state.treats.kcal || 0) + preset.kcal;
+        persist();
+      }
+    });
+  });
+  card.querySelector('[data-preset-clear]').addEventListener('click', () => {
+    state.treats.kcal = 0;
+    persist();
+  });
+}
+
+function dayTotalKcal(state){
+  const dm = dayMacros(state);
+  return dm.kcal + (state.treats.kcal || 0);
+}
+
+function setStat(key, actual, target){
+  const card = document.querySelector(`#summary-card [data-stat="${key}"]`);
+  if(!card) return;
+  card.querySelector('[data-stat-actual]').textContent = fmt(actual);
+  card.querySelector('[data-stat-target]').textContent = fmt(target);
+  const pct = target > 0 ? Math.min(100, (actual/target)*100) : 0;
+  card.querySelector('[data-stat-bar]').style.width = pct + '%';
+
+  const delta = actual - target; // negative = under target, positive = over target
+  const unit = key === 'kcal' ? ' kcal' : 'g';
+  const sign = delta >= 0 ? '+' : '';
+  const diffEl = card.querySelector('[data-stat-diff]');
+  let cls;
+  if(key === 'kcal'){
+    cls = delta <= 0 ? 'good' : 'bad';
+  } else if(key === 'protein'){
+    cls = delta >= 0 ? 'good' : (actual >= target*0.9 ? 'warn' : 'bad');
+  } else {
+    cls = 'neutral';
+  }
+  diffEl.textContent = `${sign}${fmt(delta)}${unit} vs target`;
+  diffEl.className = 'stat-diff ' + cls;
+}
+
+function renderSummary(){
+  let total = zero();
+  let daysLogged = 0;
+  DAYS.forEach(day => {
+    const state = stateCache[day.key];
+    const kcal = dayTotalKcal(state);
+    const dm = dayMacros(state);
+    total.kcal += kcal;
+    total.protein += dm.protein;
+    total.carbs += dm.carbs;
+    total.fat += dm.fat;
+    if(kcal > 0) daysLogged++;
+  });
+
+  document.getElementById('wk-days-logged').textContent = daysLogged + ' / 7';
+  document.getElementById('wk-avg-kcal').textContent = fmt(total.kcal / 7);
+
+  setStat('kcal', total.kcal, WEEK_TARGETS.kcal);
+  setStat('protein', total.protein, WEEK_TARGETS.protein);
+  setStat('carbs', total.carbs, WEEK_TARGETS.carbs);
+  setStat('fat', total.fat, WEEK_TARGETS.fat);
+
+  const tbody = document.getElementById('wk-day-rows');
+  tbody.innerHTML = '';
+  DAYS.forEach(day => {
+    const state = stateCache[day.key];
+    const kcal = dayTotalKcal(state);
+    const dm = dayMacros(state);
+    const delta = kcal - DAILY_TARGETS.kcal;
+    const cls = delta <= 0 ? 'pos' : 'neg';
+    const sign = delta >= 0 ? '+' : '';
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${day.short}</td><td>${fmt(kcal)}</td><td>${fmt(dm.protein)}g</td><td class="${cls}">${sign}${fmt(delta)} kcal</td>`;
+    tbody.appendChild(row);
+  });
+}
+
+
+function switchToDay(key){
+  activeDayKey = key;
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === key));
+  document.querySelectorAll('.day-card').forEach(c => c.classList.toggle('active', c.dataset.day === key));
+  if(key === 'summary'){
+    renderSummary();
+    return;
+  }
+  const day = DAYS.find(d => d.key === key);
+  updateWeekSummaryForActiveDay(day);
+}
+
+(async function init(){
+  const nav = document.getElementById('day-nav');
+  const container = document.getElementById('days-container');
+
+  const summaryTab = document.createElement('div');
+  summaryTab.className = 'day-tab summary-tab';
+  summaryTab.dataset.tab = 'summary';
+  summaryTab.innerHTML = `SUMMARY<span class="pct">Week vs goals</span>`;
+  summaryTab.addEventListener('click', () => switchToDay('summary'));
+  nav.appendChild(summaryTab);
+
+  for(const day of DAYS){
+    stateCache[day.key] = await loadDayState(day);
+
+    const tab = document.createElement('div');
+    tab.className = 'day-tab' + (day.weekend ? ' weekend' : '');
+    tab.dataset.tab = day.key;
+    tab.innerHTML = `${day.short}<span class="pct">0 kcal</span>`;
+    tab.addEventListener('click', () => switchToDay(day.key));
+    nav.appendChild(tab);
+
+    const cardWrap = document.createElement('div');
+    cardWrap.innerHTML = renderDayCard(day);
+    container.appendChild(cardWrap.firstElementChild);
+  }
+
+  for(const day of DAYS){
+    const card = document.querySelector(`.day-card[data-day="${day.key}"]`);
+    renderDay(card, day, stateCache[day.key]);
+    wireDay(day);
+    updateNavPct(day);
+  }
+
+  switchToDay(DAYS[0].key);
+})();
+</script>
+</body>
+</html>
